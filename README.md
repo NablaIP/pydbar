@@ -5,4 +5,6 @@ This package follows up on the pyEIT presented in https://github.com/liubenyuan/
 For now we will keep things simple and a proper documentation will follow.
 
 To test it out simply install through: pip install py-dbar.
-A simple use case is provided in the notebook on tests folder
+A simple use case is provided in the tests folder together with Data.
+
+A theoretical explanation will follow on https://nablaip.squarespace.com/
