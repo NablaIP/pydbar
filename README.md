@@ -8,3 +8,10 @@ To test it out simply install through: pip install py-dbar.
 A simple use case is provided in the tests folder together with Data.
 
 A theoretical explanation will follow on https://nablaip.squarespace.com/
+
+## To ADD: 
+
+ 1. Support to simulate from pyEIT;
+ 2. Support of trignometric current patterns and pairwise current patterns;
+ 3. Support for GREIT and RL;
+ 4. Study U-Net to improve D-bar reconstruction.
