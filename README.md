@@ -19,13 +19,9 @@ To install this package it is enough to use pip:
 
 Test cases are present in the tests folder. Soon, there will be a presentation here of the output.
 
-## 4. Details on Implementation:
+## 4. Algorithm Review
 
-pyDbar is composed of three main classes: 
-
-                      read_data, k_grid, dBar. 
-                      
-The class **read_data** and **k_grid** are independent of each other, while the **dBar** depends on both. 
+Here we explain the main steps of the Dbar algorithm with either direct numerical implementation or with theoretical motivation.
 
 ### Dirichlet-to-Neumann map
 
@@ -62,10 +58,22 @@ For our algorithm we create a mapping from this data: Dirichlet-to-Neumman map, 
 
 This mapping is the matrix approximation of the continuum operator for a body with conductivity &gamma;.
 
-However, for the algorithm to run we either need the DtoN map of a body with the same geometry but with conductivity 1 or we need a reference DtoN map that corresponds to the same body with a different physiology (e.g. expiration and inspiration). This last case is designated by **tdEIT** and is very useful when monitoring health conditions that change with time like air ventilation in the lungs.
+Furthermore, the Dbar algorthm requires either the DtoN map of a body with the same geometry but with conductivity 1 or a reference DtoN map that corresponds to the same body with a different physiology (e.g. expiration and inspiration). This last case is designated by **tdEIT** and is very useful when monitoring health conditions that change with time like air ventilation in the lungs. With this in mind, the ***read_data class*** was constructed to compute one DtoN map from one set of current patterns and corresponding measured voltages. 
 
-With this in mind, the ***read_data class*** was constructed to compute one DtoN map from one set of current patterns and corresponding measured voltages. 
+### Scattering Transform
 
+ The second step of the algorithm is to compute the scattering transform. This transform is of non-physical nature, i.e. has no physical explanation, but is tightly connect with the the conductivity and can be determined by the Dirichlet-to-Neumann map. It is given in the new spectral parameter **k** in the following manner:
+ 
+ <p align="center">
+<img src="https://latex.codecogs.com/png.latex?%5Ctextbf%7Bt%7D%28k%29%20%3D%20%5Cint_%7B%5Cpartial%5COmega%7D%20e%5E%7Bi%5Cbar%7Bk%7D%5Cbar%7Bz%7D%7D%5Cleft%28%5CLambda_%7B%5Cgamma%7D%20-%20%5CLambda_%7B1%7D%20%5Cright%20%29%5Cpsi%28z%2C%20k%29%5C%2C%20ds%28z%29%20%3D%20%5Cint_%7B%5Cmathbb%7BR%7D%5E2%7D%20e%5E%7Bi%5Cbar%7Bk%7D%5Cbar%7Bz%7D%7Dq%28z%29%5Cpsi%28z%2C%20k%29%20%5C%2Cdxdy%5C%2C" /> </p>
+
+Now due to the ill-posedness of the inverse problem, the noise in the measurements highly affects the values of **t** for large **|k|**. The regularization strategy proven by Siltanen shows that we only need to compute the following approximation for the scattering transform:
+<p align="center">
+<img src="https://latex.codecogs.com/png.latex?%5Ctextbf%7Bt%7D%5ER%28k%29%20%3D%20%5Cleft%5C%7B%20%5Cbegin%7Bmatrix%7D%20%5Cint_%7B%5Cpartial%5COmega%7D%20e%5E%7Bi%5Cbar%7Bk%7D%5Cbar%7Bz%7D%7D%5Cleft%28%5CLambda_%7B%5Cgamma%7D%20-%20%5CLambda_%7B1%7D%20%5Cright%20%29%5Cpsi%28z%2C%20k%29%5C%2C%20ds%28z%29%2C%20%5Ctext%7B%20for%20%7D%20%7Ck%7C%3CR%20%5C%5C%20%5C%5C%200%2C%20%5Cquad%20%5Cquad%20%5Cquad%5Cquad%5Cquad%5Cquad%5Cquad%5Cquad%5Cquad%5Cquad%5Cquad%5Cquad%5Ctext%7B%20otherwise%7D%20%5Cend%7Bmatrix%7D%5Cright." /> </p>
+
+The beauty of this regularization strategy lies in a finite discretization of **k** inside a disk of radius **R** being required. The choice of **R** is dependent in an estimate of the noise present in the measurements.
+
+Now the last step is to solve the Dbar equation, which gives the name to the algorithm.
 
 **Input of read_data:** 
 - ***str_Object***: name of folder that contains Current and Voltage files, for now we assume that all data is an EIT_Data folder.
