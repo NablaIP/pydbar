@@ -101,7 +101,31 @@ Afterwards, we can determine the conductivity by:
  
  By substituting the scattering transform by its approximations and solving the equation with respect to it we obtain respective approximations to the conductivity.
  
+ ## 5. Numerical Implementation
  
+ Above, we present an immediate numerical implementation of the Dirichlet-to-Neumann map that trivially translates to code and a theoretical implementation of the regularization strategy for the D-bar and corresponding determination of the conductivity. Accordingly, we present the numerical implementation for both versions of the scattering transform and the solution to the Dbar equation.
+ 
+ ### t-exp Scattering transform:
+ 
+ The t-exp scattering transform corresponds to take the exponential approximation of &psi;, which has the following form:
+ 
+ <p align="center">
+  <img src="https://latex.codecogs.com/png.latex?%5Ctextbf%7Bt%7D%5E%7B%5Ctext%7Bexp%7D%7D%28k%29%20%3D%20%5Cint_%7B%5Cpartial%5COmega%7D%20e%5E%7Bi%5Cbar%7Bk%7D%5Cbar%7Bz%7D%7D%5Cleft%28%20%5CLambda_%7B%5Cgamma%7D%20-%20%5CLambda_1%20%5Cright%20%29e%5E%7Bikz%7D%5C%2C%20ds%28z%29"/> </p>
+  
+Let us consider that we have equally distributed electrodes around the boundary. By our assumption of &Omega; being a disc we define, without loss of generality, the positions of the electrodes to be <img src="https://render.githubusercontent.com/render/math?math=\vec{z}=(z^1,\, z^2, \, ...,\, z^L)" > where <img src="https://render.githubusercontent.com/render/math?math=z^j=(2\pi j)/L" >.
+
+From this, we can take an approximation of the exponentials in these set points as an expansion in the orthonormal basis of current pattern (**L-1** degrees of freedom):
+
+<p align="center">
+ <img src=""https://render.githubusercontent.com/render/math?math=z^j=(2\pi j)/L"" /> </p>.
+ 
+By immediate substitution this leads too:
+
+
+ 
+
+
+
 
 **Input of read_data:** 
 - ***str_Object***: name of folder that contains Current and Voltage files, for now we assume that all data is an EIT_Data folder.
