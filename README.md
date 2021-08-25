@@ -71,9 +71,37 @@ Now due to the ill-posedness of the inverse problem, the noise in the measuremen
 <p align="center">
 <img src="https://latex.codecogs.com/png.latex?%5Ctextbf%7Bt%7D%5ER%28k%29%20%3D%20%5Cleft%5C%7B%20%5Cbegin%7Bmatrix%7D%20%5Cint_%7B%5Cpartial%5COmega%7D%20e%5E%7Bi%5Cbar%7Bk%7D%5Cbar%7Bz%7D%7D%5Cleft%28%5CLambda_%7B%5Cgamma%7D%20-%20%5CLambda_%7B1%7D%20%5Cright%20%29%5Cpsi%28z%2C%20k%29%5C%2C%20ds%28z%29%2C%20%5Ctext%7B%20for%20%7D%20%7Ck%7C%3CR%20%5C%5C%20%5C%5C%200%2C%20%5Cquad%20%5Cquad%20%5Cquad%5Cquad%5Cquad%5Cquad%5Cquad%5Cquad%5Cquad%5Cquad%5Cquad%5Cquad%5Ctext%7B%20otherwise%7D%20%5Cend%7Bmatrix%7D%5Cright." /> </p>
 
-The beauty of this regularization strategy lies in a finite discretization of **k** inside a disk of radius **R** being required. The choice of **R** is dependent in an estimate of the noise present in the measurements.
+The beauty of this regularization strategy lies in a finite discretization of **k** inside a disk of radius **R** being required. The choice of **R** dependends in an estimate of the noise present in the measurements.
+
+To completely understand the computation of the scattering transform we need to obtain **&psi;** at the boundary. Nachman's was able to prove that the values of &psi; at the boundary can be determined by the solution of a boundary integral equation for **k &in; &#8450; \ {0}**:
+<p align="center">
+<img src="https://latex.codecogs.com/png.latex?%5Cleft.%5Cpsi%28%5Ccdot%2C%20k%29%5Cright%7C_%7B%5Cpartial%5COmega%7D%20%3D%20%5Cleft.%20e%5E%7Bikz%7D%5Cright%7C_%7B%5Cpartial%5COmega%7D%20-%20S_%7Bk%7D%28%5CLambda_%7B%5Cgamma%7D-%7B%5CLambda_1%7D%29%5Cpsi%28%5Ccdot%2C%20k%29" /> </p>
+
+However, this equation takes a lot of time to solve, thus for speedup purposes we choose an approximate solution. We can have two approaches:
+- Solve the boundary integral equation with **S<sub>0</sub>** substituting **S<sub>k</sub>** and with the following definition:
+<p align="center">
+<img src="https://latex.codecogs.com/png.latex?%5Cleft%28S_0%20f%20%5Cright%20%29%28x%29%20%3D%20%5Cint_%7B%5Cpartial%5COmega%7D%20G_0%28x%20-%20y%29f%28y%29%5C%2C%20d%5Csigma%28y%29%2C%20%5Ctext%7B%20where%20%7D%20G_0%28x%29%20%3D%20-%5Cfrac%7B1%7D%7B2%5Cpi%7D%5Ctext%7B%20log%7D%5C%2C%7Cx%7C." /> </p>
+
+This approach is present in [2].
+
+- Take **&psi;&sime; e<sup> ikz</sup>**, since this is the leading behavior and do not solve any integral equation.
+This is the fastest way, but its triviality leads to more errors.
 
 Now the last step is to solve the Dbar equation, which gives the name to the algorithm.
+
+### D-bar equation
+
+Now, having computed the scattering transform or an approximation of it, we are able to solve the following PDE in the **k** variable:
+<p align="center">
+ <img src="https://latex.codecogs.com/png.latex?%5Ctext%7BFor%20all%20%7D%20z%5Cin%5COmega%2C%20%5Ctext%7Bsolve%20the%20D-bar%20equation%3A%20%7D%5Cquad%5Cquad%20%5Cfrac%7B%5Cpartial%7D%7B%5Cpartial%5Cbar%7Bk%7D%7D%20%5Cmu%28z%2C%20k%29%20%3D%20%5Cfrac%7B%5Ctextbf%7Bt%7D%28k%29%7D%7B4%5Cpi%5Cbar%7Bk%7D%7De%5E%7B-2i%5Ctext%7BRe%7D%28kz%29%7D%5Coverline%7B%5Cmu%28z%2Ck%29%7D" /> </p>
+ 
+Afterwards, we can determine the conductivity by:
+<p align="center">
+ <img src="https://latex.codecogs.com/png.latex?%5Csigma%28z%29%20%3D%20%5Cleft%28%5C%2C%5Cmu%28z%2C%200%29%5C%2C%5Cright%29%5E2"/> </p>.
+ 
+ By substituting the scattering transform by its approximations and solving the equation with respect to it we obtain respective approximations to the conductivity.
+ 
+ 
 
 **Input of read_data:** 
 - ***str_Object***: name of folder that contains Current and Voltage files, for now we assume that all data is an EIT_Data folder.
@@ -100,4 +128,10 @@ Now the last step is to solve the Dbar equation, which gives the name to the alg
 ## 5. To ADD: 
 
  1. Change class read_data to just use r, AE and L as input since this will be the same for all frames of data when we do tdEIT -> This will decrease memory. Moreover, we probably do not need to also save the voltages in the class.
+ 2. Add the t^exp approximation of the Scattering transform.
+
+## 6. Bibliography:
+
+[1]
+[2] Toufic El Arwadi, Toni Sayah. (2021) A new regularization of the D-bar method with complex conductivity. Complex Variables and Elliptic Equations 66:5, pages 826-842.
 
