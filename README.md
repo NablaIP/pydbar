@@ -154,6 +154,20 @@ To compute the scattering transform we need to solve the last system of equation
  
  ### D-bar Equation:
  
+ Now we have to solve the D-bar equation in the **k**-variable. This is the essence of this new spectral parameter, it allows for the reconstruction of the conductivity without iterative solutions of an FEM model of conductivity.
+ Although, we do not solve the PDE directly... we pass it to an integral equation and use Fourier Transform after discretization to solve the linear system of equations.
+ 
+ ***Integral Equation***:
+ 
+ Solve for each z&in;&Omega;: 
+ <p align="center">
+  <img src="https://latex.codecogs.com/png.latex?%5Cbg_white%20%5Cmu%28z%2C%20k%29%20%3D%201%20&plus;%20%5Cfrac%7B1%7D%7B%282%5Cpi%29%5E2%7D%5Cint_%7B%5Cmathbb%7BR%7D%5E2%7D%20%5Cfrac%7B%5Ctextbf%7Bt%7D%28k%27%29%7D%7B%28k%20-%20k%27%29%5Coverline%7Bk%27%7D%7De%5E%7B-2i%5C%2C%5Ctext%7BRe%7D%5C%2C%28zk%27%29%20%7D%5Coverline%7B%5Cmu%28z%2Ck%27%29%7D%5C%2C%20dk%27_1dk%27_2"/> </p>
+ 
+ 
+ Recall that, the regularization procedure establishes that for **|k|>R** the scattering transform is **0**, in both cases. Hence, the integral can be taken in the disk of radius **R**. To practically solve this equation we need to deal with the singularity properly. A fast approach to solve the equation is to transform it into a periodic setting (initial idea was by Vainikko, [3], and adapted to the Dbar equation in [4]). Let <img src="https://latex.codecogs.com/png.latex?%5Cinline%20%5Cbg_white%20G_%7B%5Cbar%7B%5Cpartial%7D%7D%28k%29%20%3D%201/%28%5Cpi%20k%29" /> be the fundamental solution of the D-bar operator. First, we write the integral equation in convolution terms:
+ 
+<p align="center">
+  <img src="https://latex.codecogs.com/png.latex?%5Cbg_white%20%5Cmu%28z%2Ck%29%20%3D%201%20&plus;%20G_%7B%5Cbar%7B%5Cpartial%7D%7D%28k%29%5C%2C%5Cast%20%5Cleft%28T%28z%2C%20k%29%5Coverline%7B%5Cmu%28z%2C%20k%29%7D%20%5Cright%20%29%2C%20%5Ctext%7B%20where%20%7D%20T%28z%2C%20k%29%20%3D%20%5Cfrac%7B%5Ctextbf%7Bt%7D%28k%29%7D%7B4%5Cpi%5Cbar%7Bk%7D%7De%5E%7B-2i%5C%2C%5Ctext%7BRe%7D%5C%2C%28zk%29%7D"/> </p>
  
  
  
@@ -203,5 +217,7 @@ To compute the scattering transform we need to solve the last system of equation
 
 [1] Mueller, J. L., & Siltanen, S. (2020). The d-bar method for electrical impedance tomography—demystified. Inverse problems, 36(9), 093001.
 [2] El Arwadi, T., & Sayah, T. (2021). A new regularization of the D-bar method with complex conductivity. Complex Variables and Elliptic Equations, 66(5), 826-842.
+[3] Vainikko, G. (2000). Fast solvers of the Lippmann-Schwinger equation. In Direct and inverse problems of mathematical physics (pp. 423-440). Springer, Boston, MA.
+[4] Knudsen, K., Mueller, J., & Siltanen, S. (2004). Numerical solution method for the dbar-equation in the plane. Journal of Computational Physics, 198(2), 500-517.
 
 
