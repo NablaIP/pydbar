@@ -170,22 +170,38 @@ To compute the scattering transform we need to solve the last system of equation
   <img src="https://latex.codecogs.com/png.latex?%5Cbg_white%20%5Cmu%28z%2Ck%29%20%3D%201%20&plus;%20G_%7B%5Cbar%7B%5Cpartial%7D%7D%28k%29%5C%2C%5Cast%20%5Cleft%28T%28z%2C%20k%29%5Coverline%7B%5Cmu%28z%2C%20k%29%7D%20%5Cright%20%29%2C%20%5Ctext%7B%20where%20%7D%20T%28z%2C%20k%29%20%3D%20%5Cfrac%7B%5Ctextbf%7Bt%7D%28k%29%7D%7B4%5Cpi%5Cbar%7Bk%7D%7De%5E%7B-2i%5C%2C%5Ctext%7BRe%7D%5C%2C%28zk%29%7D"/> </p>
  
  
+ The periodization is done by tiling the **k-plane** with a square Q=[-2R-3&epsilon;, 2R + 3&epsilon;]<sup>2</sup> for some &epsilon;>0, in this manner, Q containes the disk of radius 2R. Now, we take a smooth cut-off function &eta; which fulfils &eta;(k)=1 for |k|<2R+&epsilon; and &eta;(k)=0 for |k|>2R+2&epsilon;. With this we define the periodic approximate green function <img src="https://latex.codecogs.com/png.latex?%5Cinline%20%5Cwidetilde%7BG%7D_%7B%5Cbar%7B%5Cpartial%7D%7D%28k%29%20%3D%20%5Ceta%28k%29G_%7B%5Cbar%7B%5Cpartial%7D%7D%28k%29" />.
  
+ In this framework we have the periodic version of the integral D-bar equation given by:
  
+ <p align="center">
+  <img src="https://latex.codecogs.com/png.latex?%5Cbg_white%20%5Cmu_%5Ctext%7BR%7D%28z%2C%20k%29%20%3D%201%20&plus;%20%5Cwidetilde%7BG%7D_%7B%5Cbar%7B%5Cpartial%7D%7D%28k%29%5Cstar%5Cleft%28T_%7B%5Ctext%7BR%7D%7D%28z%2Ck%29%5Coverline%7B%5Cmu_%7B%5Ctext%7BR%7D%7D%28z%2Ck%29%7D%29%20%5Cright%20%29"/> </p>
+  
+  where &Star; denotes periodic convolution and T<sub>R</sub> is the defined as T for |k|<R and 0 otherwise. The interesting part is that the solution of this equation and of the full equation coincide in |k|<R, which is what we desire.
+  
+ By discretizing the **k-plane** into an equally spaced grid with step **h**, the periodic convolution can be computed efficiently by Fast Fourier transforms and we obtain the following system of equations:
  
-
-
-
-
-
-
-
-
+ <p align="center">
+  <img src="https://latex.codecogs.com/png.latex?%5Cbg_white%20%5Cmu_%5Ctext%7BR%7D%20%3D%20I%20&plus;%20%5Ctext%7BIFFT%7D%5Cleft%28%5Ctext%7BFFT%7D%28%5Ctextbf%7BG%7D_%7B%5Cbar%5Cpartial%7D%29%5Ccdot%5Ctext%7BFFT%7D%28%5Ctextbf%7BT%7D_%7B%5Ctext%7BR%7D%7D%5Coverline%7B%5Cmu_R%7D%29%20%5Cright%20%29" /> </p>
+  
+  where the boldface notation represents the matrices formed by evaluation of the functions in the **k-grid** and &sdot; represents matrix multiplication.
+  
+  Since we &mu;<sub>R</sub> is inside the Fourier transform we can not describe this system through the simple form Ax=b. Hence, the system of equations lends itself well to a solution by a matrix-free iterative solver like the **GMRES**.
+  
+  Due to conjugation on &mu;<sub>R</sub> the equation is &Ropf;-linear and separation of the real and imaginary parts, which is done by justposition of the real and imaginary parts into a vector. Further details, can be seen in [1].
+  
+  
+  This is what we need for implementation and it provides a framework for the code we present in this package. A description of each class and function and its role is presented next.
  
+ ## 6. Documentation:
 
+Here, we provide an overview of each class and examples of usage. Our package possesses three classes:
 
+                      read_data, k_grid, dBar.
+                      
+ The two first classes are independent and concern the input information and framework. The **dBar** class is dependent of both and performs the solver. 
 
-
+# read_data class
 **Input of read_data:** 
 - ***str_Object***: name of folder that contains Current and Voltage files, for now we assume that all data is an EIT_Data folder.
 - ***r***         : radius of the body (onlu holds for circular objects);
