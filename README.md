@@ -184,9 +184,12 @@ To compute the scattering transform we need to solve the last system of equation
  <p align="center">
   <img src="https://latex.codecogs.com/png.latex?%5Cbg_white%20%5Cmu_%5Ctext%7BR%7D%20%3D%20I%20&plus;%20%5Ctext%7BIFFT%7D%5Cleft%28%5Ctext%7BFFT%7D%28%5Ctextbf%7BG%7D_%7B%5Cbar%5Cpartial%7D%29%5Ccdot%5Ctext%7BFFT%7D%28%5Ctextbf%7BT%7D_%7B%5Ctext%7BR%7D%7D%5Coverline%7B%5Cmu_R%7D%29%20%5Cright%20%29" /> </p>
   
-  where the boldface notation represents the matrices formed by evaluation of the functions in the **k-grid** and &sdot; represents matrix multiplication.
+  where the boldface notation represents the matrices formed by evaluation of the functions in the **k-grid** and &sdot; represents matrix multiplication. This equation can be written in a simpler form, which will be helpful to describe our code below:
   
-  Since we &mu;<sub>R</sub> is inside the Fourier transform we can not describe this system through the simple form Ax=b. Hence, the system of equations lends itself well to a solution by a matrix-free iterative solver like the **GMRES**.
+  <p align="center">
+  <img src="https://latex.codecogs.com/png.latex?%5Cbg_white%20%5BI%20&plus;%20%5Ctextbf%7BP%7D%5D%5Cmu_R%28z%2C%20%5Ccdot%29%20%3D%20%5Ctextbf%7B1%7D%2C%20%5Ctext%7B%20where%20%7D%20%5Ctextbf%7BP%7D%5Cmu_R%28z%2Ck%29%20%3D%20%5Ctext%7BIFFT%7D%28%5Ctext%7BFFT%7D%28%5Ctextbf%7BG%7D_%7B%5Cbar%5Cpartial%7D%29%5Ccdot%20%5Ctext%7BFFT%7D%28%5Ctextbf%7BT%7D_R%5Coverline%7B%5Cmu_R%28z%2Ck%29%7D%29%29" /> </p>.
+  
+  Since &mu;<sub>R</sub> is inside the Fourier transform, we can not describe this system through the simple form Ax=b. Hence, the system of equations lends itself well to a solution by a matrix-free iterative solver like the **GMRES**.
   
   Due to conjugation on &mu;<sub>R</sub> the equation is &Ropf;-linear and separation of the real and imaginary parts, which is done by justposition of the real and imaginary parts into a vector. Further details, can be seen in [1].
   
@@ -282,9 +285,9 @@ Definition of the grid discretization of the **k-plane** with respect to the par
        
     It is defined as 2<sup>m</sub>. Therefore, it is the number of elements on each line of the grid.
 
-- ***k: (N*N) complex 1darray***
+- ***k: (N<sup>2</sup>) complex 1darray***
     
-    Complex values of the k_grid, where the columns of the grid are concatenated to form a 1d array. Essential for complex-valued computations.
+    Complex values of the k_grid, where the columns of the grid are concatenated to form a 1d array. Essential for complex-valued computations. This grid contains the value **0**.
 
 - ***idx: array_like***
 
@@ -294,22 +297,22 @@ Definition of the grid discretization of the **k-plane** with respect to the par
 
     Number of elements of ***k*** which are inside the disk of radius ***R***.
     
-- ***FG: (N*N) complex 1darray***
+ - ***FG: (N<sup>2</sup>) complex 1darray***
 
     The fundamental solution <img src="https://latex.codecogs.com/png.latex?%5Cinline%20%5Cbg_white%20G_%7B%5Cbar%5Cpartial%7D"/> of the D-bar operator, with the same structure of ***k***.
     
- **Methods:**
+**Methods:**
  
  - ***k_gen():***
  
     Defines the complex k-grid ***k***.
     
- - ***Green_FS():***
+- ***Green_FS():***
 
     Defines the FFT of fundamental solution **FG**. Recall that we perform a periodization of the convolution equation and therefore we need to establish a smooth decay to 0 close to the square limits of the grid.
     
- - ***find():***
-    
+- ***find():***
+
     Determines ***indx*** and stores the indexes in ***idx***.
  
  
@@ -322,20 +325,66 @@ Definition of the grid discretization of the **k-plane** with respect to the par
  
  **Parameters:**
  
+- ***k_grid: Object***
+ 
+    An object of k_grid type.
+ 
+- ***Now: Object***
+
+    The read_data object that contains the Dirichlet-to-Neumann matrix of the current conductivity to determine.
+ 
+- ***Ref: Object***
+
+    The read_data object that contains the Dirichlet-to-Neumann matrix of the conductivity of a frame of reference.
+    
+- ***R_z: float***
+
+    Defines the size of the z-grid.
+
+- ***m_z: int***
+
+    Defines the step size of the z-grid.
+    
+    
+**Attributes:**
+     
  - ***Z: complex 1darray***
 
     Array of dimension 2<sup>2m_z</sup> which contains the z-grid,  where the columns of the grid are concatenated to form a 1d array.
     
-  - ***tK: (k_grid.k.size) complex 1darray***
+ - ***tK: (k_grid.k.size) complex 1darray***
  
-    Definition of the scattering transform approximations. 
+    Definition of the scattering transform approximations.  
     
  - ***sigma: (Z.size) real 1darray***
+    
+    Array of the conductivity values at the points of the Z-plane grid.
+
+
+**Methods:**
+
+- ***load_mesh(R, m):***
+
+    Defines the complex z-grid ***Z***.
+    
+- ***Scat_B(Now, Ref, k_grid):*** 
+    
+    Defines the approximation of the scattering transform obtained through the approxiamte solution of the integral boundary equation. For |k|>R and k=0+0i we set our scattering transform to be **0**.
+    
+- ***dBar(mu, k_grid, zz):***
+
+    Defines the operator [I + **P**] for a **zz** element of the z-grid, which is the left-hand side of the Dbar system. It takes as input the vector &mu; which is a 1darray that contains the real part concatenated with the imaginary part. We assume &mu; is 0 outside the disk of radius R, for speed-up purposes, however this is not a constraint since the scattering transform would cut-off this terms when defining the operator.
+
+- ***solve(k_grid):***
+
+    Solve for each **z** on the z-grid the Dbar system with ***GMRES***. We use the ***dBar*** function to define the [I+**P**] operator for each **z** and use the initial approximation of **mu** being close to **1** to start off. After solving the system, we store the value of the conductivity through **&gamma;(z)=(&mu;(z,0))^2**.
+    
+- ***plot():***
+
+    Plot the obtained conductivity on the respective Z grid.  
+
 
     
-
-    
-
 
 
 ## 5. To ADD: 
@@ -345,6 +394,7 @@ Definition of the grid discretization of the **k-plane** with respect to the par
  3. Overcome the circular domain and conductivity equal to 1 near the boundary constraint.
  4. Think if it makes sense to mantain the R and m has attributes of the class k_grid (same as 1.).
  5. Check if find() works properly, since it is defining two variables self.idx and self.indx inside it and not on the constructor.
+ 6. Comment the code along
 
 ## 6. Bibliography:
 
