@@ -202,38 +202,158 @@ Here, we provide an overview of each class and examples of usage. Our package po
  The two first classes are independent and concern the input information and framework. The **dBar** class is dependent of both and performs the solver. 
 
 # read_data class
-**Input of read_data:** 
-- ***str_Object***: name of folder that contains Current and Voltage files, for now we assume that all data is an EIT_Data folder.
-- ***r***         : radius of the body (onlu holds for circular objects);
-- ***AE***        : area of one electrode;
-- ***L***         : number of electrodes;
+
+*class read_data(Object, r, AE, L)*
+
+Defines the Dirichlet-to-Neumann matrix approximation from the experimental data: electrical measurements, radius of the body, area of electrode and number of electrodes.
+The current version only holds for circular domains and for objects which have conductivity equal to 1 near the boundary.
+
+**Parameters:** 
+- ***Object: string***
+             
+    Name of folder of object to evaluate. This folder must contain a "Current.txt" and a "Voltage.txt" file where each line represent a current pattern and the measured voltages, respectively. For now we assume that all data is at EIT_Data folder.
+             
+- ***r: float***        
+             
+    Radius of the body;
+             
+- ***AE: float***     
+             
+    Area of one electrode;
+             
+- ***L: int***          
+            
+    Number of electrodes;
+
+**Attributes:**
+- ***Current: (L, L-1) 2darray*** 
+ 
+    Matrix of the normalized current patterns, each column represents one normalized current pattern;
+
+- ***Voltage: (L, L-1) 2darray***
+
+    Matrix of the normalized voltages, where the i-th column represents the voltages measured for the i-th current pattern;
+              
+- ***DNmap: (L-1, L-1) 2darray***  
+
+    Matrix approximation of Dirichlet-to-Neumann map for the measured data.
+
+**Methods:**  
+- ***load():*** 
+
+     This function starts by performing the normalization of the current and voltage measurements and thereafter computes the Dirichlet-to-Neumann as described above. It is called directly from the constructor and the user does need to use it directly.
+            
+### Examples:
 
 
-**Output:**
-- ***Current***: matrix of size L x L-1 of the normalized current patterns, each column represents one normalized current pattern;
-- ***Voltage***: matrix of size L x L-1 of the normalized voltages, where the i-th column represents the voltage measured for the i-th current pattern;
-- ***DNmap***  : matrix of size L-1 x L-1 that defines the Dirichlet-to-Neumann map for the measured data.
+# k_grid class
 
+*class k_grid(R, m)*
 
+Definition of the grid discretization of the **k-plane** with respect to the parameters **R** and **m**. As required by the periodic discrete convolution, the grid is defined in [-2.3R, 2.3R]^2 with step size h=2(2.3R)/2<sup>m</sup>. 
 
+**Parameters:**
+- ***R: float***
 
+    Defines the size of the k grid
 
+- ***m: int***
+    
+    Defines the step size.
 
+**Attributes:**
+- ***R: float***
 
+    As the parameter.
+ 
+- ***m: int***
+    
+    As the parameter.
+    
+- ***s: float***
 
-  
+    It is defined as 2.3R, to simplify definitions further ahead.
+
+- ***h: float***
+      
+    Step size of the k grid.
+      
+- ***N: int*** 
+       
+    It is defined as 2<sup>m</sub>. Therefore, it is the number of elements on each line of the grid.
+
+- ***k: (N*N) complex 1darray***
+    
+    Complex values of the k_grid, where the columns of the grid are concatenated to form a 1d array. Essential for complex-valued computations.
+
+- ***idx: array_like***
+
+    Array that stores the indexes of the elements of ***k*** which are inside the disk of radius ***R***.
+
+- ***indx: int***
+
+    Number of elements of ***k*** which are inside the disk of radius ***R***.
+    
+- ***FG: (N*N) complex 1darray***
+
+    The fundamental solution <img src="https://latex.codecogs.com/png.latex?%5Cinline%20%5Cbg_white%20G_%7B%5Cbar%5Cpartial%7D"/> of the D-bar operator, with the same structure of ***k***.
+    
+ **Methods:**
+ 
+ - ***k_gen():***
+ 
+    Defines the complex k-grid ***k***.
+    
+ - ***Green_FS():***
+
+    Defines the FFT of fundamental solution **FG**. Recall that we perform a periodization of the convolution equation and therefore we need to establish a smooth decay to 0 close to the square limits of the grid.
+    
+ - ***find():***
+    
+    Determines ***indx*** and stores the indexes in ***idx***.
+ 
+ 
+ ### Examples:
+ 
+ 
+ # dBar class
+ 
+ *class dBar(k_grid, Now, Ref, R_z, m_z)*
+ 
+ **Parameters:**
+ 
+ - ***Z: complex 1darray***
+
+    Array of dimension 2<sup>2m_z</sup> which contains the z-grid,  where the columns of the grid are concatenated to form a 1d array.
+    
+  - ***tK: (k_grid.k.size) complex 1darray***
+ 
+    Definition of the scattering transform approximations. 
+    
+ - ***sigma: (Z.size) real 1darray***
+
+    
+
+    
+
 
 
 ## 5. To ADD: 
 
  1. Change class read_data to just use r, AE and L as input since this will be the same for all frames of data when we do tdEIT -> This will decrease memory. Moreover, we probably do not need to also save the voltages in the class.
  2. Add the t^exp approximation of the Scattering transform.
+ 3. Overcome the circular domain and conductivity equal to 1 near the boundary constraint.
+ 4. Think if it makes sense to mantain the R and m has attributes of the class k_grid (same as 1.).
+ 5. Check if find() works properly, since it is defining two variables self.idx and self.indx inside it and not on the constructor.
 
 ## 6. Bibliography:
 
 [1] Mueller, J. L., & Siltanen, S. (2020). The d-bar method for electrical impedance tomography—demystified. Inverse problems, 36(9), 093001.
+
 [2] El Arwadi, T., & Sayah, T. (2021). A new regularization of the D-bar method with complex conductivity. Complex Variables and Elliptic Equations, 66(5), 826-842.
+
 [3] Vainikko, G. (2000). Fast solvers of the Lippmann-Schwinger equation. In Direct and inverse problems of mathematical physics (pp. 423-440). Springer, Boston, MA.
+
 [4] Knudsen, K., Mueller, J., & Siltanen, S. (2004). Numerical solution method for the dbar-equation in the plane. Journal of Computational Physics, 198(2), 500-517.
 
 
