@@ -1,76 +1,61 @@
 import numpy as np
 import cmath
 import math
-from scipy.fft import fft, ifft
+from scipy.fft import fft2, ifft2, fftshift
 
 
-pi = math.pi
+pi = math.pi 
 
 class k_grid:
+    
+    pos_x = []
+    pos_y = []
     
     def __init__(self, R, m):
         self.R = R
         self.m = m
         self.s = 2.3*R
-        self.h = 2*2.3*R/pow(2, m)
-        self.N = pow(2, m)
-        self.k = np.zeros(int(self.N*self.N), dtype=complex)
-        self.FG = np.zeros(int(self.N*self.N), dtype=complex)
-        self.k_gen()
-        self.Green_FS()
-        self.find()
-            
-    def k_gen(self):
-            
-            for l in range(self.N):
-                for ll in range(self.N):
-                    self.k[l*self.N + ll] = complex(-2.3*self.R + l*self.h, -2.3*self.R + ll*self.h)
+        self.h = 2*(2.3*R)/(2**m)
+        self.N = 2**m
+        self.index = -1
+        self.k = np.zeros((self.N, self.N), dtype=complex)
+        self.generate()
+        self.FG = self.fund_sol()
+        
+    def generate(self):
+        
+        for j in range(self.N):
+            for jj in range(self.N):
+                
+                self.k[j, jj] = complex(-self.s + j*self.h, -self.s + jj*self.h)
+        
+                if(abs(self.k[j, jj]) < self.R):
+                    self.pos_x.append(j)
+                    self.pos_y.append(jj)
+                
+                if(abs(self.k[j, jj]) < 1e-7):
+                    self.index = len(self.pos_x)-1
                     
-    def find(self):
+      
     
-        idx = []
-        self.indx = -1
-
-        for l in range(self.k.size):
-            if abs(self.k[l]) < self.R:
-                idx.append(l)
-                if(abs(self.k[l]) < 1e-7):
-                    self.indx = len(idx)-1
-
-        self.idx = np.array(idx)
-    
-         
-    
-    def Green_FS(self):
+    def fund_sol(self):
+        
         eps = self.s/10
-        RR = (self.s - eps)/2
-        ind0 = 1e-7
-
-        FG = np.zeros(int(self.N*self.N), dtype=complex)
-
-        for l in range(self.k.size):
-            if(abs(self.k[l]) < self.s and abs(self.k[l])>ind0 ):
-
-                FG[l] = 1./(pi*self.k[l])
-
-                if(abs(self.k[l]) >= 2*RR):
-
-                    FG[l] = FG[l]*(1. - (abs(self.k[l]) - 2*RR )/eps)
-
-
-        G =  np.zeros(int(self.N*self.N), dtype=complex)
-        G[:] = FG
-
-        ss=0
-        ll=0
-        N = int(pow(2, self.m))
-
-
-        for k in range(N):
-            for j in range(N):
-                ss = int(j + N/2) % N
-                ll = int(k + N/2) % N
-                FG[j+k*N] = G[ss+ll*N]
-
-
-        self.FG = fft(FG, norm="backward")
+        RR = (self.s-eps)/2
+        i0 = 1e-7
+        
+        G = np.zeros((self.N, self.N), dtype=complex)
+        
+        for j in range(self.N):
+            for jj in range(self.N):
+                
+                abs_k = abs(self.k[j, jj])
+                
+                if (abs_k < self.s and abs_k > i0):
+                    G[j, jj] = 1/(self.k[j, jj]*pi)
+                    
+                    if(abs_k >= 2*RR):
+                        G[j, jj] = G[j, jj]*(1 - (abs_k - 2*RR)/eps)
+        
+        return fft2(fftshift(G))
+        

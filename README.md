@@ -321,9 +321,13 @@ Definition of the grid discretization of the **k-plane** with respect to the par
  
  # dBar class
  
- *class dBar(k_grid, Now, Ref, R_z, m_z)*
+ *class dBar(scat_approx, k_grid, Now, Ref, R_z, m_z)*
  
  **Parameters:**
+
+- ***scat_approx: string***
+
+    Defines the scattering transform approximation: "exp" is the exponential approximation and "partial_psi" is the approximate solution of the boundary integral equation.
  
 - ***k_grid: Object***
  
@@ -366,10 +370,20 @@ Definition of the grid discretization of the **k-plane** with respect to the par
 - ***load_mesh(R, m):***
 
     Defines the complex z-grid ***Z***.
+
+- ***load_Scat(string, Now, Ref, k_grid):***
+
+    Allows to choose which Scattering transform approximation to use. 
+	string == "exp" invokes the Scattering transform with exponential approximation of &psi;
+	string == "partial_psi" invokes the Scattering transform with an approximate solution to the integral boundary equation.
+
+- ***Scat_exp(Now, Ref, k_grid):***
+
+    Defines the approximation of the scattering transfrom obtained through the exponential approximation of &psi;. For |k|>R and k=0+0i we set our scattering transform to be **0**. 
     
 - ***Scat_B(Now, Ref, k_grid):*** 
     
-    Defines the approximation of the scattering transform obtained through the approxiamte solution of the integral boundary equation. For |k|>R and k=0+0i we set our scattering transform to be **0**.
+    Defines the approximation of the scattering transform obtained through the approximate solution of the boundary integral equation. For |k|>R and k=0+0i we set our scattering transform to be **0**.
     
 - ***dBar(mu, k_grid, zz):***
 
@@ -405,5 +419,6 @@ Definition of the grid discretization of the **k-plane** with respect to the par
 [3] Vainikko, G. (2000). Fast solvers of the Lippmann-Schwinger equation. In Direct and inverse problems of mathematical physics (pp. 423-440). Springer, Boston, MA.
 
 [4] Knudsen, K., Mueller, J., & Siltanen, S. (2004). Numerical solution method for the dbar-equation in the plane. Journal of Computational Physics, 198(2), 500-517.
+
 
 

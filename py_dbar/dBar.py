@@ -5,7 +5,7 @@ import math
 import scipy.sparse.linalg as spla
 from numpy import linalg as LG
 import scipy.linalg as sla
-from scipy.fft import fft, ifft
+from scipy.fft import fft2, ifft2
 import pyamg
 import matplotlib.pyplot as plt
 
@@ -14,80 +14,11 @@ pi = math.pi
 
 class dBar:
     
-    def __init__(self, k_grid, Now, Ref, R_z, m_z):
-        self.tK = np.zeros(k_grid.k.size, dtype=complex)
-        self.Scat_B(Now, Ref, k_grid)
-        self.Z = np.zeros(int(pow(2, 2*m_z)), dtype=complex)
+    def __init__(self, R_z, m_z):
+        self.Z = np.zeros( (2**m_z, 2**m_z), dtype=complex)
         self.load_mesh(1, m_z)
-        self.sigma = np.zeros(self.Z.size)
         
-        
-    def Scat_B(self, Now, Ref, k_grid):
-    
-        G0 = np.zeros((Now.L, Now.L), dtype=complex)
-
-
-        dt = (2*pi)/Now.L
-        zt = np.exp(1j*np.arange(0, 2*pi, 2*pi/Now.L))
-
-        for l in range(Now.L):
-            for ll in range(Now.L):
-                if l != ll:
-                    G0[l, ll] = -(1/(2*pi))*cmath.log( abs( zt[l] - zt[ll] ) )
-
-        Ez = np.zeros(Now.L, dtype=complex)
-
-        dL = Now.DNmap - Ref.DNmap
-        Phi = np.matmul(Now.Current.transpose(),Now.Current)
-        M = np.zeros((Now.L-1, Now.L-1), dtype=complex)
-        PhidL = np.matmul(Now.Current,dL)
-
-        ind0 = 1e-7
-
-        M = Phi + np.matmul(Now.Current.transpose(),np.matmul(G0, PhidL))
-
-        for l in range(k_grid.k.size):
-                if( abs(k_grid.k[l]) < k_grid.R and abs(k_grid.k[l]) > ind0):
-
-                    Ez = np.exp(1j*k_grid.k[l]*zt)
-
-                    psi_b, residuals, rank, s  = np.linalg.lstsq(M, np.matmul(Now.Current.transpose(),Ez), rcond=None)
-
-
-                    for n in range(Now.L):
-                        c = cmath.exp(1j*((k_grid.k[l]*zt[n]).conjugate()))
-                        for m in range(Now.L-1):
-
-                            self.tK[l] = self.tK[l] + c*psi_b[m]*PhidL[n, m]
-
-                    self.tK[l] = Now.AE*self.tK[l]/(4*pi*(k_grid.k[l].conjugate()))
-
-
-    
-    def dBar(self, mu, k_grid, zz):
-    
-        RHS = np.zeros((k_grid.N*k_grid.N), dtype=complex)
-
-        N = len(k_grid.idx)
-
-        for l in range(N):
-            RHS[k_grid.idx[l]] = cmath.exp(-2j*( (k_grid.k[k_grid.idx[l]]*zz).real) )* self.tK[k_grid.idx[l]]*complex(mu[l], -mu[l+N])
-
-
-        F_RHS = fft(RHS, norm="backward")
-
-        F_RHS = np.multiply(F_RHS, k_grid.FG)
-
-        RHS = ifft(F_RHS, norm="backward")
-
-
-        for l in range(N):
-            mu[l] = mu[l] - (k_grid.h*k_grid.h)*RHS[k_grid.idx[l]].real
-            mu[l+N] = mu[l+N] - (k_grid.h*k_grid.h)*RHS[k_grid.idx[l]].imag
-
-
-        return mu
-    
+        self.sigma = np.zeros((2**m_z, 2**m_z))
     
     def load_mesh(self, R, m):
     
@@ -95,46 +26,70 @@ class dBar:
         h = 2*R/N
 
         for l in range(N):
-            if l%2==0:
-                for ll in range(N):
-                    self.Z[l*N+ ll] = complex(-R + l*h, -R + ll*h)
-            else:
-                for ll in range(N):
-                    self.Z[l*N+ ll] = complex(-R + l*h, R - h*ll)
+            for ll in range(N):
+                    self.Z[l, ll] = complex(-R + l*h, -R + ll*h)
                 
     
     
-    # We are assuming that the data is in EIT_Data/Simulation/...
-    def solve(self, k_grid):
+    def dBar(self, mu, k_grid, tK, zz):
+    
+        RHS = np.zeros((k_grid.N, k_grid.N), dtype=complex)
+
+        N = len(k_grid.pos_x)
+
+        for l in range(N):
+                RHS[ k_grid.pos_x[l], k_grid.pos_y[l] ] = cmath.exp(-2j*( (k_grid.k[ k_grid.pos_x[l], k_grid.pos_y[l] ]*zz).real) )* tK.tK[k_grid.pos_x[l], k_grid.pos_y[l]]*complex(mu[l], -mu[l+N])
+
+
+        F_RHS = fft2(RHS)
+
+        for j in range(k_grid.N):
+            for jj in range(k_grid.N):
+                F_RHS[j, jj] = F_RHS[j, jj]*k_grid.FG[j, jj]
+
+        RHS = ifft2(F_RHS)
+
+        for l in range(N):
+            mu[l] = mu[l] - (k_grid.h*k_grid.h)*RHS[ k_grid.pos_x[l], k_grid.pos_y[l]].real
+            mu[l+N] = mu[l+N] - (k_grid.h*k_grid.h)*RHS[ k_grid.pos_x[l], k_grid.pos_y[l] ].imag
+
+
+        return mu
+    
+  
+    def solve(self, k_grid, tK):
         
-        N = len(k_grid.idx)
+        N = len(k_grid.pos_x)
     
         # Define the b and initial solution as the vectors of 1+0.j
         b = np.concatenate((np.ones(N), np.zeros(N)), axis=None)
         mu = np.concatenate((np.ones(N), np.zeros(N)), axis=None)
 
         
-        zz = self.Z[0]
+        zz = self.Z[0, 0]
 
         def Op(mu):
-            return self.dBar(mu, k_grid, zz)
+            return self.dBar(mu, k_grid, tK, zz)
 
         A = spla.LinearOperator((2*N,2*N), matvec=Op)
 
+        n = self.Z.shape[0]
+        
+        for j in range(n):
+            for jj in range(n):
+                
+                zz = self.Z[j, jj]
 
-        for i in range(1, self.Z.size):
-                zz = self.Z[i]
-
-                mu, exitcode = pyamg.krylov.gmres(A, b, x0=mu, maxiter=10, orthog='householder')
+                mu, exitcode = pyamg.krylov.gmres(A, b, x0=mu, maxiter=5, orthog='mgs')
                 #mu = EIT_GMRES(b, mu, 5, Kp, tK, Zz, FG)
 
                 if(abs(zz) <= 1):
-                    self.sigma[i] = mu[k_grid.indx]*mu[k_grid.indx]-mu[k_grid.indx+N]*mu[k_grid.indx+N]
+                    self.sigma[j, jj] = mu[k_grid.index]*mu[k_grid.index]-mu[k_grid.index+N]*mu[k_grid.index+N]
 
 
     def plot(self):
         
-        Z_N = int(math.sqrt(self.Z.size))
+        Z_N = self.Z.shape[0]
         X = np.zeros(Z_N)
         Y = np.zeros(Z_N)
         h = 2/(Z_N)
@@ -145,14 +100,11 @@ class dBar:
         sigma_x = np.zeros((Z_N, Z_N))
 
         for i in range(Z_N):
-            if i%2==0:
-                for j in range(Z_N):
-                    sigma_x[i, j] = self.sigma[j+i*Z_N]
-            else:
-                for j in range(Z_N):
-                    sigma_x[i, j] = self.sigma[(Z_N-1-j)+i*Z_N]
+            for j in range(Z_N):
+                sigma_x[j, i] = self.sigma[i, j]
+            
 
         sigma_x = np.ma.masked_where(sigma_x==0, sigma_x)
-        plt.pcolormesh(X, Y, sigma_x, cmap='binary')
+        plt.pcolormesh(X, Y, sigma_x, cmap='RdBu')
         plt.colorbar()   
     
