@@ -403,12 +403,9 @@ Definition of the grid discretization of the **k-plane** with respect to the par
 
 ## 5. To ADD: 
 
- 1. Change class read_data to just use r, AE and L as input since this will be the same for all frames of data when we do tdEIT -> This will decrease memory. Moreover, we probably do not need to also save the voltages in the class.
- 2. Add the t^exp approximation of the Scattering transform.
- 3. Overcome the circular domain and conductivity equal to 1 near the boundary constraint.
- 4. Think if it makes sense to mantain the R and m has attributes of the class k_grid (same as 1.).
- 5. Check if find() works properly, since it is defining two variables self.idx and self.indx inside it and not on the constructor.
- 6. Comment the code along
+ 1. Overcome the circular domain and conductivity equal to 1 near the boundary constraint.
+ 2. Update ReadME.md
+ 3. Comment the code along
 
 ## 6. Bibliography:
 
