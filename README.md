@@ -200,9 +200,43 @@ To compute the scattering transform we need to solve the last system of equation
 
 Here, we provide an overview of each class and examples of usage. Our package possesses three classes:
 
-                      read_data, k_grid, dBar.
+                      sim, read_data, k_grid, scattering, dBar.
                       
- The two first classes are independent and concern the input information and framework. The **dBar** class is dependent of both and performs the solver. 
+ The first three classes are independent and concern the input information and framework. The fourth connects the gather data into a single operator, which is transmitted to the **dBar** class. This class is dependent of both the scattering and k_grid and performs the solver. 
+
+# sim class
+
+*class sim(anomaly, L)*
+
+This class is a simulator of voltages obtained through the FEM-solution of the Direct problem. We can create the conductivity of a body in a disk and then solve the direct problem for this conductivity by applying pair-wise adjacent current patterns (as described above). Thereafter, we can determine the voltage at the electrode positions and hence create the necessary data to apply an inversion procedure.
+
+This class is based solely on pyEIT.
+
+**Parameters:**
+
+- ***anomaly: list***
+
+	By assumption we have that the background conductivity is equal to 1. Then we can create disk anomalies by selecting the center, radius and the conductivity of the region.
+
+- ***L: int***
+
+	Number of electrodes.
+
+**Attributes:**
+- ***Current: (L-1, L)***
+
+	Matrix with the currents patterns applied to the body.
+
+- ***Voltage: (L-1, L)***
+
+	Matrix with the "measured" voltages obtained to sucessive FEM-solutions of the direct problem.
+	
+**Methods:**
+
+- ***simulate():***
+	
+	This function uses each of the adjacent pair current patterns, solves the direct problem by FEM, and determines the voltages at the electrodes.
+
 
 # read_data class
 
@@ -212,9 +246,13 @@ Defines the Dirichlet-to-Neumann matrix approximation from the experimental data
 The current version only holds for circular domains and for objects which have conductivity equal to 1 near the boundary.
 
 **Parameters:** 
-- ***Object: string***
-             
-    Name of folder of object to evaluate. This folder must contain a "Current.txt" and a "Voltage.txt" file where each line represent a current pattern and the measured voltages, respectively. For now we assume that all data is at EIT_Data folder.
+- ***Current: (L-1, L) 2darray***
+
+	Matrix of current patterns. Each line is a current pattern.
+
+- ***Voltage: (L-1, L) 2darray***
+
+	Matrix of voltage measurements. Each line corresponds to the current pattern on the same line of the current matrix.
              
 - ***r: float***        
              
@@ -285,62 +323,77 @@ Definition of the grid discretization of the **k-plane** with respect to the par
        
     It is defined as 2<sup>m</sub>. Therefore, it is the number of elements on each line of the grid.
 
-- ***k: (N<sup>2</sup>) complex 1darray***
+- ***k: (N, N) complex 2darray***
     
-    Complex values of the k_grid, where the columns of the grid are concatenated to form a 1d array. Essential for complex-valued computations. This grid contains the value **0**.
+    Complex values of the k_grid. Essential for complex-valued computations. This grid contains the value **0**.
 
-- ***idx: array_like***
+- ***pos_x, pos_y: array_like***
 
-    Array that stores the indexes of the elements of ***k*** which are inside the disk of radius ***R***.
+    Arrays that store the indexes of the elements of ***k*** which are inside the disk of radius ***R***.
 
-- ***indx: int***
+- ***index: int***
 
-    Number of elements of ***k*** which are inside the disk of radius ***R***.
+    Represents the position of zero.
     
- - ***FG: (N<sup>2</sup>) complex 1darray***
+ - ***FG: (N, N) complex 1darray***
 
     The fundamental solution <img src="https://latex.codecogs.com/png.latex?%5Cinline%20%5Cbg_white%20G_%7B%5Cbar%5Cpartial%7D"/> of the D-bar operator, with the same structure of ***k***.
     
 **Methods:**
  
- - ***k_gen():***
+ - ***generate():***
  
-    Defines the complex k-grid ***k***.
+    Defines the complex k-grid ***k*** and determines the positions inside the disk of radius R.
     
 - ***Green_FS():***
 
     Defines the FFT of fundamental solution **FG**. Recall that we perform a periodization of the convolution equation and therefore we need to establish a smooth decay to 0 close to the square limits of the grid.
-    
-- ***find():***
+ 
+# scattering class
 
-    Determines ***indx*** and stores the indexes in ***idx***.
- 
- 
- ### Examples:
- 
- 
- # dBar class
- 
- *class dBar(scat_approx, k_grid, Now, Ref, R_z, m_z)*
+ *class scattering(scat_type, k_grid, Now, Ref):*
  
  **Parameters:**
-
-- ***scat_approx: string***
-
-    Defines the scattering transform approximation: "exp" is the exponential approximation and "partial_psi" is the approximate solution of the boundary integral equation.
  
+ - ***scat_type: string***
+ 	
+     Allows to choose between the approximations of the scattering transform. Choices: "partial", "exp"!.
+
 - ***k_grid: Object***
- 
-    An object of k_grid type.
- 
-- ***Now: Object***
+	
+     An object of k_grid type.
 
-    The read_data object that contains the Dirichlet-to-Neumann matrix of the current conductivity to determine.
- 
-- ***Ref: Object***
+- ***Now, Ref: Objects***
 
-    The read_data object that contains the Dirichlet-to-Neumann matrix of the conductivity of a frame of reference.
+     Objects of read_data type (we require the DN map for our body of choice and an homogeneous/reference body).
+
+**Attributes:**
+
+- ***tK: (k_grid.N, k_grid.N) complex 2darray***
+
+     Matrix containing the values of an intermediare operator containing information about the DN map of our body of choice. Essential for the Dbar method.
+
+**Methods:**
+
+- ***load_scattering(scat_type, k_grid, Now, Ref):***
+
+    Given the choice of approximation for the scattering transform this function selects between two functions: one compute the exponential aproximation, another computes the partial approximation;
+
+- ***exp_scattering(Now, Ref, k_grid):***
+ 
+    Computes the exponential approximation of the scattering transform.
     
+- ***partial_scattering(Now, Ref, k_grid):***
+ 
+    Computes the partial approximation of the scattering transform.
+    
+   
+ # dBar class
+ 
+ *class dBar(R_z, m_z)*
+ 
+ **Parameters:**
+  
 - ***R_z: float***
 
     Defines the size of the z-grid.
@@ -352,17 +405,13 @@ Definition of the grid discretization of the **k-plane** with respect to the par
     
 **Attributes:**
      
- - ***Z: complex 1darray***
+ - ***Z: (2<sup>m_z</sup>, 2<sup>m_z</sup>) complex 2darray***
 
-    Array of dimension 2<sup>2m_z</sup> which contains the z-grid,  where the columns of the grid are concatenated to form a 1d array.
+    Planar region of the body.
+
+ - ***sigma: (2<sup>m_z</sup>, 2<sup>m_z</sup>) complex 2darray***
     
- - ***tK: (k_grid.k.size) complex 1darray***
- 
-    Definition of the scattering transform approximations.  
-    
- - ***sigma: (Z.size) real 1darray***
-    
-    Array of the conductivity values at the points of the Z-plane grid.
+    Conductivity values at the points of the Z-plane grid.
 
 
 **Methods:**
@@ -370,26 +419,12 @@ Definition of the grid discretization of the **k-plane** with respect to the par
 - ***load_mesh(R, m):***
 
     Defines the complex z-grid ***Z***.
-
-- ***load_Scat(string, Now, Ref, k_grid):***
-
-    Allows to choose which Scattering transform approximation to use. 
-	string == "exp" invokes the Scattering transform with exponential approximation of &psi;
-	string == "partial_psi" invokes the Scattering transform with an approximate solution to the integral boundary equation.
-
-- ***Scat_exp(Now, Ref, k_grid):***
-
-    Defines the approximation of the scattering transfrom obtained through the exponential approximation of &psi;. For |k|>R and k=0+0i we set our scattering transform to be **0**. 
     
-- ***Scat_B(Now, Ref, k_grid):*** 
-    
-    Defines the approximation of the scattering transform obtained through the approximate solution of the boundary integral equation. For |k|>R and k=0+0i we set our scattering transform to be **0**.
-    
-- ***dBar(mu, k_grid, zz):***
+- ***dBar(mu, k_grid, tK, zz):***
 
     Defines the operator [I + **P**] for a **zz** element of the z-grid, which is the left-hand side of the Dbar system. It takes as input the vector &mu; which is a 1darray that contains the real part concatenated with the imaginary part. We assume &mu; is 0 outside the disk of radius R, for speed-up purposes, however this is not a constraint since the scattering transform would cut-off this terms when defining the operator.
 
-- ***solve(k_grid):***
+- ***solve(k_grid, tK):***
 
     Solve for each **z** on the z-grid the Dbar system with ***GMRES***. We use the ***dBar*** function to define the [I+**P**] operator for each **z** and use the initial approximation of **mu** being close to **1** to start off. After solving the system, we store the value of the conductivity through **&gamma;(z)=(&mu;(z,0))^2**.
     
@@ -397,15 +432,6 @@ Definition of the grid discretization of the **k-plane** with respect to the par
 
     Plot the obtained conductivity on the respective Z grid.  
 
-
-    
-
-
-## 5. To ADD: 
-
- 1. Overcome the circular domain and conductivity equal to 1 near the boundary constraint.
- 2. Update ReadME.md
- 3. Comment the code along
 
 ## 6. Bibliography:
 
